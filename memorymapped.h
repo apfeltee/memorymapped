@@ -105,7 +105,6 @@ namespace MemoryMapped
             /// impl-defined open
             bool openReal(size_t mappedBytes, CacheHint hint);
 
-
             /// error handlers
             bool errOffset();
 
@@ -132,7 +131,7 @@ namespace MemoryMapped
             unsigned char at(size_t offset) const;
 
             /// raw access
-            const unsigned char* getData() const;
+            const unsigned char* data() const;
 
             /// true if file successfully opened
             bool isValid() const;

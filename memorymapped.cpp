@@ -77,7 +77,7 @@ namespace MemoryMapped
 
     unsigned char File::operator[](size_t offset) const
     {
-        return ((unsigned char*)m_mappedView)[offset];
+        return data()[offset];
     }
 
     unsigned char File::at(size_t offset) const
@@ -94,7 +94,7 @@ namespace MemoryMapped
         return operator[](offset);
     }
 
-    const unsigned char* File::getData() const
+    const unsigned char* File::data() const
     {
         return (const unsigned char*)m_mappedView;
     }
