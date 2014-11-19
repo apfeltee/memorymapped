@@ -1,4 +1,6 @@
 
+#pragma once
+
 namespace MemoryMapped
 {
     size_t GetPageSize()

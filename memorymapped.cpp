@@ -85,11 +85,11 @@ namespace MemoryMapped
         // checks
         if(!m_mappedView)
         {
-            throw std::invalid_argument("no view mapped");
+            throw IOError(m_filename, "no view mapped");
         }
         if (offset >= m_filesize)
         {
-            throw std::out_of_range("view is not large enough");
+            throw IOError(m_filename, "mapped view is not large enough");
         }
         return operator[](offset);
     }

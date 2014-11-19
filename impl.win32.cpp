@@ -1,5 +1,5 @@
 
-#include <cassert>
+#pragma once
 
 namespace MemoryMapped
 {
