@@ -1,4 +1,4 @@
 
 all:
-	clang++ -o a.exe -std=c++11 test.cpp memorymapped.cpp
+	g++ -std=c++11 -Wall -Wextra -Weffc++ -o a.exe test.cpp memorymapped.cpp
 

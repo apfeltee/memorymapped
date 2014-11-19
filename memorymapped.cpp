@@ -39,10 +39,10 @@ namespace MemoryMapped
         m_filename   (),
         m_filesize   (0),
         m_hint       (Normal),
+        m_handle     (0),
         m_mappedBytes(0),
-        m_file       (0),
-        m_mappedFile (NULL),
-        m_mappedView (NULL)
+        m_mappedView (NULL),
+        m_mappedFile (NULL)
     {
     }
 
@@ -50,10 +50,10 @@ namespace MemoryMapped
         m_filename   (filename),
         m_filesize   (0),
         m_hint       (hint),
+        m_handle     (0),
         m_mappedBytes(mappedBytes),
-        m_file       (0),
-        m_mappedFile (NULL),
-        m_mappedView (NULL)
+        m_mappedView (NULL),
+        m_mappedFile (NULL)
     {
         open(filename, mappedBytes, hint);
     }
@@ -63,17 +63,15 @@ namespace MemoryMapped
         close();
     }
 
-    bool File::errOpenFail(const std::string& filename, const std::string& msg)
+    bool File::open(const std::string& filename, size_t mappedBytes, CacheHint hint)
     {
-        //std::stringstream strm;
-        //strm << "failed to open '" << filename << "': " << msg;
-        throw IOError(msg);
-        return false;
+        m_filename = filename;
+        return openReal(mappedBytes, hint);
     }
 
     bool File::errOffset()
     {
-         throw IOError("trying to read beyond file (offset > filesize)");
+         throw IOError(m_filename, "trying to read beyond file (offset > filesize)");
          return false;
     }
 

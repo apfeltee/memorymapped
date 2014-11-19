@@ -11,7 +11,7 @@ namespace MemoryMapped
     }
 
 
-    bool File::open(const std::string& filename, size_t mappedBytes, CacheHint hint)
+    bool File::openReal(size_t mappedBytes, CacheHint hint)
     {
         DWORD winHint;
         // already open ?
@@ -19,7 +19,7 @@ namespace MemoryMapped
         {
             return false;
         }
-        m_file       = 0;
+        m_handle     = 0;
         m_filesize   = 0;
         m_hint       = hint;
         m_mappedFile = NULL;
@@ -40,26 +40,29 @@ namespace MemoryMapped
                 break;
         }
         // open file
-        m_file = ::CreateFileA(
-                filename.c_str(),
+        m_handle = ::CreateFileA(
+                m_filename.c_str(),
                 GENERIC_READ, FILE_SHARE_READ, NULL,
                 OPEN_EXISTING, winHint, NULL);
-        if(!m_file)
+        if(!m_handle)
         {
-            return errOpenFail(filename, "CreateFileA() failed");
+            throw IOError(m_filename, "CreateFileA() failed");
+            return false;
         }
         // file size
         LARGE_INTEGER result;
-        if (!GetFileSizeEx(m_file, &result))
+        if (!GetFileSizeEx(m_handle, &result))
         {
-            return errOpenFail(filename, "GetFileSizeEx() failed");
+            throw IOError(m_filename, "GetFileSizeEx() failed");
+            return false;
         }
         m_filesize = static_cast<uint64_t>(result.QuadPart);
         // convert to mapped mode
-        m_mappedFile = ::CreateFileMapping(m_file, NULL, PAGE_READONLY, 0, 0, NULL);
+        m_mappedFile = ::CreateFileMapping(m_handle, NULL, PAGE_READONLY, 0, 0, NULL);
         if (!m_mappedFile)
         {
-            return errOpenFail(filename, "CreateFileMapping() failed");
+            throw IOError(m_filename, "CreateFileMapping() failed");
+            return false;
         }
         // initial mapping
         remap(0, mappedBytes);
@@ -88,10 +91,10 @@ namespace MemoryMapped
             m_mappedFile = NULL;
         }
         //close underlying file
-        if(m_file)
+        if(m_handle)
         {
-            ::CloseHandle(m_file);
-            m_file = 0;
+            ::CloseHandle(m_handle);
+            m_handle = 0;
         }
     }
 
@@ -99,9 +102,9 @@ namespace MemoryMapped
     {
         DWORD offsetLow;
         DWORD offsetHigh;
-        if (!m_file)
+        if(!m_handle)
         {
-            throw IOError("trying to operate on a closed handle");
+            throw IOError(m_filename, "trying to operate on a closed handle");
             return false;
         }
         if (mappedBytes == WholeFile)
@@ -132,7 +135,7 @@ namespace MemoryMapped
         {
             m_mappedBytes = 0;
             m_mappedView  = NULL;
-            throw IOError("MapViewOfFile() == NULL");
+            throw IOError(m_filename, "MapViewOfFile() == NULL");
             return false;
         }
         return true;

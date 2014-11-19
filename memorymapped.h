@@ -7,11 +7,12 @@
 #pragma once
 
 #include <iostream>
+#include <exception>
 #include <stdexcept>
 #include <string>
 
 // define fixed size integer types
-#if defined(_MSC_VER) || defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#if defined(_MSC_VER) || defined(_WIN32) || defined(_WIN64) // || defined(__CYGWIN__)
     #define MEMMAPPED_USING_WINDOWS
     #if !defined(__CYGWIN__)
         using uint64_t = unsigned __int64;
@@ -31,14 +32,23 @@ namespace MemoryMapped
     #endif
 
     /// get OS page size (for remap)
-    static size_t GetPageSize();
+    size_t GetPageSize();
 
-    struct IOError: std::runtime_error
+    class IOError: public std::runtime_error
     {
-        template<typename... Args>
-        IOError(Args&&... args): std::runtime_error(args...)
-        {
-        }
+        private:
+            std::string m_filename;
+
+        public:
+            IOError(const std::string& fn, const std::string& msg):
+                std::runtime_error(msg), m_filename(fn)
+            {
+            }
+
+            std::string filename() const
+            {
+                return m_filename;
+            }
     };
 
     /// Portable read-only memory mapping (Windows and Linux)
@@ -64,7 +74,7 @@ namespace MemoryMapped
                 WholeFile = 0,
             };
 
-        private:
+        protected:
             /// file name
             std::string m_filename;
 
@@ -75,14 +85,13 @@ namespace MemoryMapped
             CacheHint   m_hint;
 
             /// file handle
-            FileHandle  m_file;
+            FileHandle  m_handle;
 
             /// mapped size
             size_t      m_mappedBytes;
 
             /// pointer to the file contents mapped into memory
             void*       m_mappedView;
-
             void*       m_mappedFile;
 
         private:
@@ -92,8 +101,12 @@ namespace MemoryMapped
             /// don't copy object
             File& operator=(const File&);
 
+        protected:
+            /// impl-defined open
+            bool openReal(size_t mappedBytes, CacheHint hint);
+
+
             /// error handlers
-            bool errOpenFail(const std::string& filename, const std::string& msg);
             bool errOffset();
 
         public:

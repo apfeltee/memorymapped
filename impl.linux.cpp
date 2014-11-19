@@ -6,7 +6,7 @@ namespace MemoryMapped
         return sysconf(_SC_PAGESIZE);
     }
 
-    bool File::open(const std::string& filename, size_t mappedBytes, CacheHint hint)
+    bool File::openReal(size_t mappedBytes, CacheHint hint)
     {
         struct stat statInfo;
         // already open ?
@@ -14,20 +14,22 @@ namespace MemoryMapped
         {
             return false;
         }
-        m_file       = 0;
+        m_handle     = 0;
         m_filesize   = 0;
         m_hint       = hint;
         m_mappedView = NULL;
-        m_file = ::open(filename.c_str(), O_RDONLY | O_LARGEFILE);
-        if(m_file == -1)
+        m_handle = ::open(m_filename.c_str(), O_RDONLY | O_LARGEFILE);
+        if(m_handle == -1)
         {
-            m_file = 0;
-            return errOpenFail(filename, "open() failed");
+            m_handle = 0;
+            throw IOError(m_filename, "open() failed");
+            return false;
         }
         // file size
-        if (fstat(m_file, &statInfo) < 0)
+        if (fstat(m_handle, &statInfo) < 0)
         {
-            return errOpenFail(filename, "stat() failed");
+            throw IOError(m_filename, "stat() failed");
+            return false;
         }
         m_filesize = statInfo.st_size;
         // initial mapping
@@ -51,17 +53,17 @@ namespace MemoryMapped
             m_mappedView = NULL;
         }
         //close underlying file
-        if(m_file)
+        if(m_handle)
         {
-            ::close(m_file);
-            m_file = 0;
+            ::close(m_handle);
+            m_handle = 0;
         }
     }
 
     bool File::remap(uint64_t offset, size_t mappedBytes)
     {
         int linuxHint;
-        if (!m_file)
+        if (!m_handle)
         {
             return false;
         }
@@ -85,12 +87,12 @@ namespace MemoryMapped
             mappedBytes = size_t(m_filesize - offset);
         } 
         // new mapping
-        m_mappedView = ::mmap(NULL, mappedBytes, PROT_READ, MAP_SHARED, m_file, offset);
+        m_mappedView = ::mmap(NULL, mappedBytes, PROT_READ, MAP_SHARED, m_handle, offset);
         if(m_mappedView == MAP_FAILED)
         {
             m_mappedBytes = 0;
             m_mappedView  = NULL;
-            throw IOError("mmap == MAP_FAILED");
+            throw IOError(m_filename, "mmap == MAP_FAILED");
             return false;
         }
         m_mappedBytes = mappedBytes;
